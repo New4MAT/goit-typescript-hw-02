@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Toaster } from 'react-hot-toast';
 import SearchBar from './components/SearchBar/SearchBar';
 import ImageGallery from './components/ImageGallery/ImageGallery';
@@ -8,22 +8,26 @@ import ErrorMessage from './components/ErrorMessage/ErrorMessage';
 import LoadMoreBtn from './components/LoadMoreBtn/LoadMoreBtn';
 import ImageModal from './components/ImageModal/ImageModal';
 import styles from './App.module.css';
+import { Image, ApiResponse } from './components/types';
 
 function App() {
-  const [query, setQuery] = useState('');
-  const [images, setImages] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [page, setPage] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [totalPages, setTotalPages] = useState(0);
+  const [query, setQuery] = useState<string>('');
+  const [images, setImages] = useState<Image[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState<number>(1);
+  const [selectedImage, setSelectedImage] = useState<Image | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [totalPages, setTotalPages] = useState<number>(0);
 
-  const searchImages = async (searchQuery, pageNum = 1) => {
+  const searchImages = async (
+    searchQuery: string,
+    pageNum: number = 1,
+  ): Promise<ApiResponse | null> => {
     try {
       setLoading(true);
       setError(null);
-      const response = await axios.get(
+      const response = await axios.get<ApiResponse>(
         'https://api.unsplash.com/search/photos',
         {
           params: {
@@ -36,14 +40,15 @@ function App() {
       );
       return response.data;
     } catch (err) {
-      setError(err.message);
+      const error = err as AxiosError;
+      setError(error.message);
       return null;
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSearch = async searchQuery => {
+  const handleSearch = async (searchQuery: string): Promise<void> => {
     setQuery(searchQuery);
     setPage(1);
     const data = await searchImages(searchQuery);
@@ -53,21 +58,21 @@ function App() {
     }
   };
 
-  const handleLoadMore = async () => {
+  const handleLoadMore = async (): Promise<void> => {
     const nextPage = page + 1;
     const data = await searchImages(query, nextPage);
     if (data) {
-      setImages([...images, ...data.results]);
+      setImages(prevImages => [...prevImages, ...data.results]);
       setPage(nextPage);
     }
   };
 
-  const openModal = image => {
+  const openModal = (image: Image): void => {
     setSelectedImage(image);
     setIsModalOpen(true);
   };
 
-  const closeModal = () => {
+  const closeModal = (): void => {
     setIsModalOpen(false);
   };
 
@@ -75,14 +80,19 @@ function App() {
     <div className={styles.app}>
       <Toaster position="top-center" />
       <SearchBar onSubmit={handleSearch} />
+
       {error && <ErrorMessage message={error} />}
+
       {images.length > 0 && (
         <ImageGallery images={images} onImageClick={openModal} />
       )}
+
       {loading && <Loader />}
+
       {images.length > 0 && page < totalPages && (
         <LoadMoreBtn onClick={handleLoadMore} />
       )}
+
       {selectedImage && (
         <ImageModal
           isOpen={isModalOpen}

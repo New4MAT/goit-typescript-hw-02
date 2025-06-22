@@ -1,7 +1,13 @@
+import { Image } from '../../components/types';
 import ImageCard from '../ImageCard/ImageCard';
 import styles from './ImageGallery.module.css';
 
-const ImageGallery = ({ images, onImageClick }) => {
+interface ImageGalleryProps {
+  images: Image[];
+  onImageClick: (image: Image) => void;
+}
+
+const ImageGallery = ({ images, onImageClick }: ImageGalleryProps) => {
   return (
     <ul className={styles.gallery}>
       {images.map(image => (
